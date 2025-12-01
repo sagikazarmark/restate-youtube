@@ -4,6 +4,8 @@ from .executor import Executor
 from .model import (
     ListChannelsRequest,
     ListChannelsResponse,
+    ListPlaylistsRequest,
+    ListPlaylistsResponse,
 )
 
 
@@ -30,5 +32,16 @@ def register_service(
         return await ctx.run_typed(
             "list_channels",
             executor.list_channels,
+            request=request,
+        )
+
+    @service.handler("listPlaylists")
+    async def list_playlists(
+        ctx: restate.Context,
+        request: ListPlaylistsRequest,
+    ) -> ListPlaylistsResponse:
+        return await ctx.run_typed(
+            "list_playlists",
+            executor.list_playlists,
             request=request,
         )
