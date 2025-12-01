@@ -11,6 +11,8 @@ from .model import (
     LongUploadsStatus,
     PrivacyStatus,
     Thumbnails,
+    validate_id,
+    validate_part,
 )
 
 
@@ -206,50 +208,15 @@ class ListAllChannelsRequest(BaseModel):
 
     @field_validator("part", mode="before")
     @classmethod
-    def validate_part(cls, v):
+    def validate_part(cls, v: Any):
         """Parse and validate part parameter - accepts string or list."""
-        valid_parts = {part.value for part in ChannelPart}
-
-        # Handle both string and list inputs
-        if isinstance(v, str):
-            parts = [p.strip() for p in v.split(",")]
-        elif isinstance(v, list):
-            parts = []
-            for p in v:
-                if hasattr(p, "value"):  # Handle enum values
-                    parts.append(p.value)
-                else:
-                    parts.append(str(p).strip())
-        else:
-            raise ValueError("Part must be a string or list of strings")
-
-        # Validate all parts are valid
-        invalid_parts = [p for p in parts if p not in valid_parts]
-        if invalid_parts:
-            raise ValueError(
-                f"Invalid part(s): {', '.join(invalid_parts)}. Valid parts: {', '.join(sorted(valid_parts))}"
-            )
-        return parts
+        return validate_part(v, ChannelPart)
 
     @field_validator("id", mode="before")
     @classmethod
-    def validate_id(cls, v):
+    def validate_id(cls, v: Any):
         """Parse and validate id parameter - accepts string or list."""
-        if v is None:
-            return v
-
-        # Handle both string and list inputs
-        if isinstance(v, str):
-            ids = [id_val.strip() for id_val in v.split(",") if id_val.strip()]
-        elif isinstance(v, list):
-            ids = [str(id_val).strip() for id_val in v if str(id_val).strip()]
-        else:
-            raise ValueError("ID must be a string or list of strings")
-
-        if not ids:
-            raise ValueError("At least one ID must be provided")
-
-        return ids
+        return validate_id(v)
 
     @field_serializer("part")
     def serialize_part(self, v: list[str]) -> str | list[str]:

@@ -9,6 +9,8 @@ from .model import (
     ListResponseMixin,
     PrivacyStatus,
     Thumbnails,
+    validate_id,
+    validate_part,
 )
 
 
@@ -119,44 +121,15 @@ class ListAllPlaylistItemsRequest(BaseModel):
     )
 
     @field_validator("part", mode="before")
-    def validate_part(cls, v):
+    def validate_part(cls, v: Any):
         """Validate and convert part parameter to list of PlaylistItemPart enums."""
-        if isinstance(v, str):
-            parts = [part.strip() for part in v.split(",")]
-        elif isinstance(v, list):
-            parts = v
-        else:
-            raise ValueError("part must be a string or list")
-
-        validated_parts = []
-        for part in parts:
-            try:
-                validated_parts.append(PlaylistItemPart(part))
-            except ValueError:
-                raise ValueError(
-                    f"Invalid part '{part}'. Must be one of: {[p.value for p in PlaylistItemPart]}"
-                )
-        return validated_parts
+        return validate_part(v, PlaylistItemPart)
 
     @field_validator("id", mode="before")
     @classmethod
-    def validate_id(cls, v):
+    def validate_id(cls, v: Any):
         """Parse and validate id parameter - accepts string or list."""
-        if v is None:
-            return v
-
-        # Handle both string and list inputs
-        if isinstance(v, str):
-            ids = [id_val.strip() for id_val in v.split(",") if id_val.strip()]
-        elif isinstance(v, list):
-            ids = [str(id_val).strip() for id_val in v if str(id_val).strip()]
-        else:
-            raise ValueError("ID must be a string or list of strings")
-
-        if not ids:
-            raise ValueError("At least one ID must be provided")
-
-        return ids
+        return validate_id(v)
 
     @field_serializer("part")
     def serialize_part(self, v: list[str]) -> str | list[str]:
