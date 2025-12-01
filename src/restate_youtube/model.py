@@ -235,8 +235,8 @@ class ListResponseMixin:
     page_info: Dict[str, int] | None = Field(None, alias="pageInfo")
 
 
-class ListChannelsRequest(BaseModel, ListRequestMixin):
-    """Request parameters for the YouTube Data API channels.list endpoint."""
+class ListAllChannelsRequest(BaseModel):
+    """Request parameters for listing all channels from the YouTube Data API channels.list endpoint."""
 
     model_config = ConfigDict(validate_by_alias=True, serialize_by_alias=True)
 
@@ -268,13 +268,6 @@ class ListChannelsRequest(BaseModel, ListRequestMixin):
 
     # Optional parameters
     hl: str | None = Field(None, description="Language code for localized metadata")
-    max_results: int | None = Field(
-        None,
-        alias="maxResults",
-        ge=0,
-        le=50,
-        description="Maximum number of results (0-50, default 5)",
-    )
     on_behalf_of_content_owner: str | None = Field(
         None,
         alias="onBehalfOfContentOwner",
@@ -337,7 +330,7 @@ class ListChannelsRequest(BaseModel, ListRequestMixin):
 
         if len(specified_filters) != 1:
             raise ValueError(
-                "Exactly one filter parameter must be specified: categoryId, forHandle, forUsername, id, managedByMe, or mine"
+                "Exactly one filter parameter must be specified: forHandle, forUsername, id, managedByMe, or mine"
             )
 
     def model_dump(
@@ -363,13 +356,29 @@ class ListChannelsRequest(BaseModel, ListRequestMixin):
         return self.model_dump(serialize_part_as_string=False, **kwargs)
 
 
-class ListChannelsResponse(BaseModel, ListResponseMixin):
+class ListAllChannelsResponse(BaseModel):
     model_config = ConfigDict(validate_by_alias=True, serialize_by_alias=True)
 
     kind: Literal["youtube#channelListResponse"] = Field(
         default="youtube#channelListResponse"
     )
     items: List[Channel] = Field(default_factory=list)
+
+
+class ListChannelsRequest(ListAllChannelsRequest, ListRequestMixin):
+    """Request parameters for the YouTube Data API channels.list endpoint."""
+
+    max_results: int | None = Field(
+        None,
+        alias="maxResults",
+        ge=0,
+        le=50,
+        description="Maximum number of results (0-50, default 5)",
+    )
+
+
+class ListChannelsResponse(ListAllChannelsResponse, ListResponseMixin):
+    pass
 
 
 class PlaylistSnippet(BaseModel):

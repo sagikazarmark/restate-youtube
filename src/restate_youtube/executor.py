@@ -2,6 +2,9 @@ import logging
 from typing import List
 
 from .model import (
+    Channel,
+    ListAllChannelsRequest,
+    ListAllChannelsResponse,
     ListAllPlaylistsRequest,
     ListAllPlaylistsResponse,
     ListChannelsRequest,
@@ -30,6 +33,29 @@ class Executor:
         apiResponse = apiRequest.execute()
 
         return ListChannelsResponse.model_validate(apiResponse)
+
+    def list_all_channels(
+        self,
+        request: ListAllChannelsRequest,
+    ) -> ListAllChannelsResponse:
+        items: List[Channel] = []
+        next_page_token = None
+
+        while True:
+            apiRequest = self.youtube.channels().list(
+                pageToken=next_page_token,
+                maxResults=50,
+                **request.model_dump_for_api(exclude_none=True),
+            )
+            response = apiRequest.execute()
+
+            items.extend(response["items"])
+
+            next_page_token = response.get("nextPageToken")
+            if not next_page_token:
+                break
+
+        return ListAllChannelsResponse(items=items)
 
     def list_playlists(self, request: ListPlaylistsRequest) -> ListPlaylistsResponse:
         apiRequest = self.youtube.playlists().list(

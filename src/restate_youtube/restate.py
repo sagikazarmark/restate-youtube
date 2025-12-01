@@ -2,6 +2,8 @@ import restate
 
 from .executor import Executor
 from .model import (
+    ListAllChannelsRequest,
+    ListAllChannelsResponse,
     ListAllPlaylistsRequest,
     ListAllPlaylistsResponse,
     ListChannelsRequest,
@@ -56,5 +58,16 @@ def register_service(
         return await ctx.run_typed(
             "list_all_playlists",
             executor.list_all_playlists,
+            request=request,
+        )
+
+    @service.handler("listAllChannels")
+    async def list_all_channels(
+        ctx: restate.Context,
+        request: ListAllChannelsRequest,
+    ) -> ListAllChannelsResponse:
+        return await ctx.run_typed(
+            "list_all_channels",
+            executor.list_all_channels,
             request=request,
         )
