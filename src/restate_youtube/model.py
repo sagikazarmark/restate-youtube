@@ -59,7 +59,7 @@ class Localized(BaseModel):
     description: str
 
 
-class ListRequestMixin:
+class ListRequestMixin(BaseModel):
     """Mixin for paginated list requests."""
 
     page_token: str | None = Field(
@@ -67,7 +67,7 @@ class ListRequestMixin:
     )
 
 
-class ListResponseMixin:
+class ListResponseMixin(BaseModel):
     """Mixin for paginated list responses."""
 
     etag: str | None = None

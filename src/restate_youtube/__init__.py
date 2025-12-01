@@ -19,6 +19,12 @@ from .model_playlists import (
     ListPlaylistsRequest,
     ListPlaylistsResponse,
 )
+from .model_videos import (
+    ListAllVideosRequest,
+    ListAllVideosResponse,
+    ListVideosRequest,
+    ListVideosResponse,
+)
 from .restate import create_service, register_service
 
 __all__ = [
@@ -29,12 +35,16 @@ __all__ = [
     "ListAllPlaylistItemsResponse",
     "ListAllPlaylistsRequest",
     "ListAllPlaylistsResponse",
+    "ListAllVideosRequest",
+    "ListAllVideosResponse",
     "ListChannelsRequest",
     "ListChannelsResponse",
     "ListPlaylistItemsRequest",
     "ListPlaylistItemsResponse",
     "ListPlaylistsRequest",
     "ListPlaylistsResponse",
+    "ListVideosRequest",
+    "ListVideosResponse",
     "create_service",
     "register_service",
 ]

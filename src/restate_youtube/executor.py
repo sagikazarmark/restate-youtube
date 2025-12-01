@@ -22,6 +22,13 @@ from .model_playlists import (
     ListPlaylistsResponse,
     Playlist,
 )
+from .model_videos import (
+    ListAllVideosRequest,
+    ListAllVideosResponse,
+    ListVideosRequest,
+    ListVideosResponse,
+    Video,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -147,3 +154,44 @@ class Executor:
                 break
 
         return ListAllPlaylistItemsResponse(items=items)
+
+    def list_videos(self, request: ListVideosRequest) -> ListVideosResponse:
+        apiRequest = self.youtube.videos().list(
+            **request.model_dump(
+                exclude_none=True,
+                context={"comma_separated": True},
+            ),
+        )
+        apiResponse = apiRequest.execute()
+
+        return ListVideosResponse.model_validate(apiResponse)
+
+    def list_all_videos(
+        self,
+        request: ListAllVideosRequest,
+    ) -> ListAllVideosResponse:
+        items: List[Video] = []
+        next_page_token = None
+        max_results = 50
+
+        if request.id is not None:
+            max_results = None
+
+        while True:
+            apiRequest = self.youtube.videos().list(
+                pageToken=next_page_token,
+                maxResults=max_results,
+                **request.model_dump(
+                    exclude_none=True,
+                    context={"comma_separated": True},
+                ),
+            )
+            response = apiRequest.execute()
+
+            items.extend(response["items"])
+
+            next_page_token = response.get("nextPageToken")
+            if not next_page_token:
+                break
+
+        return ListAllVideosResponse(items=items)

@@ -19,6 +19,12 @@ from .model_playlists import (
     ListPlaylistsRequest,
     ListPlaylistsResponse,
 )
+from .model_videos import (
+    ListAllVideosRequest,
+    ListAllVideosResponse,
+    ListVideosRequest,
+    ListVideosResponse,
+)
 
 
 def create_service(
@@ -99,5 +105,27 @@ def register_service(
         return await ctx.run_typed(
             "list_all_playlist_items",
             executor.list_all_playlist_items,
+            request=request,
+        )
+
+    @service.handler("listVideos")
+    async def list_videos(
+        ctx: restate.Context,
+        request: ListVideosRequest,
+    ) -> ListVideosResponse:
+        return await ctx.run_typed(
+            "list_videos",
+            executor.list_videos,
+            request=request,
+        )
+
+    @service.handler("listAllVideos")
+    async def list_all_videos(
+        ctx: restate.Context,
+        request: ListAllVideosRequest,
+    ) -> ListAllVideosResponse:
+        return await ctx.run_typed(
+            "list_all_videos",
+            executor.list_all_videos,
             request=request,
         )
