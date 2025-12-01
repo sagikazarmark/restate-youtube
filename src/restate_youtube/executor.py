@@ -5,13 +5,18 @@ from .model import (
     Channel,
     ListAllChannelsRequest,
     ListAllChannelsResponse,
+    ListAllPlaylistItemsRequest,
+    ListAllPlaylistItemsResponse,
     ListAllPlaylistsRequest,
     ListAllPlaylistsResponse,
     ListChannelsRequest,
     ListChannelsResponse,
+    ListPlaylistItemsRequest,
+    ListPlaylistItemsResponse,
     ListPlaylistsRequest,
     ListPlaylistsResponse,
     Playlist,
+    PlaylistItem,
 )
 
 _logger = logging.getLogger(__name__)
@@ -87,3 +92,36 @@ class Executor:
                 break
 
         return ListAllPlaylistsResponse(items=items)
+
+    def list_playlist_items(
+        self, request: ListPlaylistItemsRequest
+    ) -> ListPlaylistItemsResponse:
+        apiRequest = self.youtube.playlistItems().list(
+            **request.model_dump_for_api(exclude_none=True)
+        )
+        apiResponse = apiRequest.execute()
+
+        return ListPlaylistItemsResponse.model_validate(apiResponse)
+
+    def list_all_playlist_items(
+        self,
+        request: ListAllPlaylistItemsRequest,
+    ) -> ListAllPlaylistItemsResponse:
+        items: List[PlaylistItem] = []
+        next_page_token = None
+
+        while True:
+            apiRequest = self.youtube.playlistItems().list(
+                pageToken=next_page_token,
+                maxResults=50,
+                **request.model_dump_for_api(exclude_none=True),
+            )
+            response = apiRequest.execute()
+
+            items.extend(response["items"])
+
+            next_page_token = response.get("nextPageToken")
+            if not next_page_token:
+                break
+
+        return ListAllPlaylistItemsResponse(items=items)
