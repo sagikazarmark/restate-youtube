@@ -1,17 +1,21 @@
 from .executor import (
     Executor,
 )
-from .model import (
+from .model_channels import (
     ListAllChannelsRequest,
     ListAllChannelsResponse,
-    ListAllPlaylistItemsRequest,
-    ListAllPlaylistItemsResponse,
-    ListAllPlaylistsRequest,
-    ListAllPlaylistsResponse,
     ListChannelsRequest,
     ListChannelsResponse,
+)
+from .model_playlist_item import (
+    ListAllPlaylistItemsRequest,
+    ListAllPlaylistItemsResponse,
     ListPlaylistItemsRequest,
     ListPlaylistItemsResponse,
+)
+from .model_playlists import (
+    ListAllPlaylistsRequest,
+    ListAllPlaylistsResponse,
     ListPlaylistsRequest,
     ListPlaylistsResponse,
 )

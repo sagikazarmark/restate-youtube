@@ -1,22 +1,26 @@
 import logging
 from typing import List
 
-from .model import (
+from .model_channels import (
     Channel,
     ListAllChannelsRequest,
     ListAllChannelsResponse,
-    ListAllPlaylistItemsRequest,
-    ListAllPlaylistItemsResponse,
-    ListAllPlaylistsRequest,
-    ListAllPlaylistsResponse,
     ListChannelsRequest,
     ListChannelsResponse,
+)
+from .model_playlist_item import (
+    ListAllPlaylistItemsRequest,
+    ListAllPlaylistItemsResponse,
     ListPlaylistItemsRequest,
     ListPlaylistItemsResponse,
+    PlaylistItem,
+)
+from .model_playlists import (
+    ListAllPlaylistsRequest,
+    ListAllPlaylistsResponse,
     ListPlaylistsRequest,
     ListPlaylistsResponse,
     Playlist,
-    PlaylistItem,
 )
 
 _logger = logging.getLogger(__name__)
