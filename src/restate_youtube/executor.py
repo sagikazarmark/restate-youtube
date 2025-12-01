@@ -37,7 +37,10 @@ class Executor:
 
     def list_channels(self, request: ListChannelsRequest) -> ListChannelsResponse:
         apiRequest = self.youtube.channels().list(
-            **request.model_dump_for_api(exclude_none=True)
+            **request.model_dump(
+                exclude_none=True,
+                context={"comma_separated": True},
+            ),
         )
         apiResponse = apiRequest.execute()
 
@@ -54,7 +57,10 @@ class Executor:
             apiRequest = self.youtube.channels().list(
                 pageToken=next_page_token,
                 maxResults=50,
-                **request.model_dump_for_api(exclude_none=True),
+                **request.model_dump(
+                    exclude_none=True,
+                    context={"comma_separated": True},
+                ),
             )
             response = apiRequest.execute()
 
@@ -68,7 +74,10 @@ class Executor:
 
     def list_playlists(self, request: ListPlaylistsRequest) -> ListPlaylistsResponse:
         apiRequest = self.youtube.playlists().list(
-            **request.model_dump_for_api(exclude_none=True)
+            **request.model_dump(
+                exclude_none=True,
+                context={"comma_separated": True},
+            ),
         )
         apiResponse = apiRequest.execute()
 
@@ -85,7 +94,10 @@ class Executor:
             apiRequest = self.youtube.playlists().list(
                 pageToken=next_page_token,
                 maxResults=50,
-                **request.model_dump_for_api(exclude_none=True),
+                **request.model_dump(
+                    exclude_none=True,
+                    context={"comma_separated": True},
+                ),
             )
             response = apiRequest.execute()
 
@@ -101,7 +113,10 @@ class Executor:
         self, request: ListPlaylistItemsRequest
     ) -> ListPlaylistItemsResponse:
         apiRequest = self.youtube.playlistItems().list(
-            **request.model_dump_for_api(exclude_none=True)
+            **request.model_dump(
+                exclude_none=True,
+                context={"comma_separated": True},
+            ),
         )
         apiResponse = apiRequest.execute()
 
@@ -118,7 +133,10 @@ class Executor:
             apiRequest = self.youtube.playlistItems().list(
                 pageToken=next_page_token,
                 maxResults=50,
-                **request.model_dump_for_api(exclude_none=True),
+                **request.model_dump(
+                    exclude_none=True,
+                    context={"comma_separated": True},
+                ),
             )
             response = apiRequest.execute()
 

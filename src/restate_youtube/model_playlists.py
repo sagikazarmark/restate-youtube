@@ -2,7 +2,15 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    FieldSerializationInfo,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 from .model import (
     ListRequestMixin,
@@ -91,19 +99,70 @@ class ListAllPlaylistsRequest(BaseModel):
         description="List of playlist resource properties to include in the response",
     )
 
-    # Internal configuration for serialization behavior
-    _serialize_part_as_string: bool = False
+    @field_validator("part", mode="before")
+    def validate_part(cls, v: Any):
+        return validate_part(v, PlaylistPart)
+
+    @field_serializer("part")
+    def serialize_part(
+        self,
+        v: list[str],
+        info: FieldSerializationInfo,
+    ) -> str | list[str]:
+        if info.context and info.context.get("comma_separated"):
+            return ",".join(v)
+
+        return v
 
     # Filter parameters (exactly one must be specified)
     channel_id: str | None = Field(
-        None, alias="channelId", description="YouTube channel ID"
+        None,
+        alias="channelId",
+        description="YouTube channel ID",
     )
+
     id: list[str] | None = Field(
-        None, description="List of YouTube playlist IDs or comma-separated string"
+        None,
+        description="List of YouTube playlist IDs or comma-separated string",
     )
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id(cls, v: Any):
+        return validate_id(v)
+
+    @field_serializer("id")
+    def serialize_id(
+        self,
+        v: list[str] | None,
+        info: FieldSerializationInfo,
+    ) -> str | list[str] | None:
+        if v is None:
+            return v
+
+        if info.context and info.context.get("comma_separated"):
+            return ",".join(v)
+
+        return v
+
     mine: bool | None = Field(
-        None, description="Return only playlists owned by authenticated user"
+        None,
+        description="Return only playlists owned by authenticated user",
     )
+
+    @model_validator(mode="after")
+    def validate_exactly_one_filter(self):
+        filter_fields = ["channel_id", "id", "mine"]
+        specified = [f for f in filter_fields if getattr(self, f) is not None]
+
+        if len(specified) != 1:
+            raise ValueError(
+                "Exactly one filter must be specified: "
+                "channelId, id, mine. "
+                f"Got: {specified or 'none'}"
+            )
+
+        return self
 
     # Optional parameters
     hl: str | None = Field(None, description="Language code for localized metadata")
@@ -117,71 +176,6 @@ class ListAllPlaylistsRequest(BaseModel):
         alias="onBehalfOfContentOwnerChannel",
         description="YouTube channel ID of the channel to which a video is being added",
     )
-
-    @field_validator("part", mode="before")
-    @classmethod
-    def validate_part(cls, v):
-        """Parse and validate part parameter - accepts string or list."""
-        return validate_part(v, PlaylistPart)
-
-    @field_validator("id", mode="before")
-    @classmethod
-    def validate_id(cls, v):
-        """Parse and validate id parameter - accepts string or list."""
-        return validate_id(v)
-
-    @field_serializer("part")
-    def serialize_part(self, v: list[str]) -> str | list[str]:
-        """Serialize part list to comma-separated string or keep as list based on configuration."""
-        if self._serialize_part_as_string:
-            return ",".join(v)
-        return v
-
-    @field_serializer("id")
-    def serialize_id(self, v: list[str] | None) -> str | list[str] | None:
-        """Serialize id list to comma-separated string or keep as list based on configuration."""
-        if v is None:
-            return v
-        if self._serialize_part_as_string:
-            return ",".join(v)
-        return v
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        # Validate that exactly one filter parameter is specified
-        filter_params = [
-            self.channel_id,
-            self.id,
-            self.mine,
-        ]
-        specified_filters = [p for p in filter_params if p is not None]
-
-        if len(specified_filters) != 1:
-            raise ValueError(
-                "Exactly one filter parameter must be specified: channelId, id, or mine"
-            )
-
-    def model_dump(
-        self,
-        *,
-        serialize_part_as_string: bool = False,
-        **kwargs: Any,
-    ) -> Dict[str, Any]:
-        # Temporarily set the serialization behavior
-        original_value = self._serialize_part_as_string
-        self._serialize_part_as_string = serialize_part_as_string
-
-        try:
-            return super().model_dump(**kwargs)
-        finally:
-            # Restore original value
-            self._serialize_part_as_string = original_value
-
-    def model_dump_for_api(self, **kwargs: Any) -> Dict[str, Any]:
-        return self.model_dump(serialize_part_as_string=True, **kwargs)
-
-    def model_dump_for_schema(self, **kwargs: Any) -> Dict[str, Any]:
-        return self.model_dump(serialize_part_as_string=False, **kwargs)
 
 
 class ListAllPlaylistsResponse(BaseModel):

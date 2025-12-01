@@ -2,7 +2,15 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    FieldSerializationInfo,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 from .model import (
     ListRequestMixin,
@@ -162,7 +170,8 @@ class Channel(BaseModel):
     branding_settings: BrandingSettings | None = Field(None, alias="brandingSettings")
     audit_details: AuditDetails | None = Field(None, alias="auditDetails")
     content_owner_details: ContentOwnerDetails | None = Field(
-        None, alias="contentOwnerDetails"
+        None,
+        alias="contentOwnerDetails",
     )
     localizations: Dict[str, Localized] | None = None
 
@@ -176,110 +185,99 @@ class ListAllChannelsRequest(BaseModel):
         description="List of channel resource properties to include in the response",
     )
 
-    # Internal configuration for serialization behavior
-    _serialize_part_as_string: bool = False
+    @field_validator("part", mode="before")
+    @classmethod
+    def validate_part(cls, v: Any):
+        return validate_part(v, ChannelPart)
+
+    @field_serializer("part")
+    def serialize_part(
+        self,
+        v: list[str],
+        info: FieldSerializationInfo,
+    ) -> str | list[str]:
+        if info.context and info.context.get("comma_separated"):
+            return ",".join(v)
+        return v
 
     # Filter parameters (exactly one must be specified)
     for_handle: str | None = Field(
-        None, alias="forHandle", description="YouTube handle (can include @ symbol)"
+        None,
+        alias="forHandle",
+        description="YouTube handle (can include @ symbol)",
     )
+
+    @field_validator("for_handle")
+    @classmethod
+    def validate_for_handle(cls, v):
+        if v and not v.startswith("@"):
+            return f"@{v}"
+
+        return v
+
     for_username: str | None = Field(
-        None, alias="forUsername", description="YouTube username"
+        None,
+        alias="forUsername",
+        description="YouTube username",
     )
+
     id: list[str] | None = Field(
-        None, description="List of YouTube channel IDs or comma-separated string"
+        None,
+        description="List of YouTube channel IDs or comma-separated string",
     )
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id(cls, v: Any):
+        return validate_id(v)
+
+    @field_serializer("id")
+    def serialize_id(
+        self,
+        v: list[str] | None,
+        info: FieldSerializationInfo,
+    ) -> str | list[str] | None:
+        if v is None:
+            return v
+
+        if info.context and info.context.get("comma_separated"):
+            return ",".join(v)
+
+        return v
+
     managed_by_me: bool | None = Field(
         None,
         alias="managedByMe",
         description="Return only channels managed by content owner",
     )
+
     mine: bool | None = Field(
-        None, description="Return only channels owned by authenticated user"
+        None,
+        description="Return only channels owned by authenticated user",
     )
+
+    @model_validator(mode="after")
+    def validate_exactly_one_filter(self):
+        filter_fields = ["for_handle", "for_username", "id", "managed_by_me", "mine"]
+        specified = [f for f in filter_fields if getattr(self, f) is not None]
+
+        if len(specified) != 1:
+            raise ValueError(
+                "Exactly one filter must be specified: "
+                "forHandle, forUsername, id, managedByMe, or mine. "
+                f"Got: {specified or 'none'}"
+            )
+
+        return self
 
     # Optional parameters
     hl: str | None = Field(None, description="Language code for localized metadata")
+
     on_behalf_of_content_owner: str | None = Field(
         None,
         alias="onBehalfOfContentOwner",
         description="Content owner on whose behalf the request is made",
     )
-
-    @field_validator("part", mode="before")
-    @classmethod
-    def validate_part(cls, v: Any):
-        """Parse and validate part parameter - accepts string or list."""
-        return validate_part(v, ChannelPart)
-
-    @field_validator("id", mode="before")
-    @classmethod
-    def validate_id(cls, v: Any):
-        """Parse and validate id parameter - accepts string or list."""
-        return validate_id(v)
-
-    @field_serializer("part")
-    def serialize_part(self, v: list[str]) -> str | list[str]:
-        """Serialize part list to comma-separated string or keep as list based on configuration."""
-        if self._serialize_part_as_string:
-            return ",".join(v)
-        return v
-
-    @field_serializer("id")
-    def serialize_id(self, v: list[str] | None) -> str | list[str] | None:
-        """Serialize id list to comma-separated string or keep as list based on configuration."""
-        if v is None:
-            return v
-        if self._serialize_part_as_string:
-            return ",".join(v)
-        return v
-
-    @field_validator("for_handle")
-    @classmethod
-    def validate_for_handle(cls, v):
-        """Allow @ symbol to be optional in handle."""
-        if v and not v.startswith("@"):
-            return f"@{v}"
-        return v
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        # Validate that exactly one filter parameter is specified
-        filter_params = [
-            self.for_handle,
-            self.for_username,
-            self.id,
-            self.managed_by_me,
-            self.mine,
-        ]
-        specified_filters = [p for p in filter_params if p is not None]
-
-        if len(specified_filters) != 1:
-            raise ValueError(
-                "Exactly one filter parameter must be specified: forHandle, forUsername, id, managedByMe, or mine"
-            )
-
-    def model_dump(
-        self,
-        *,
-        serialize_part_as_string: bool = False,
-        **kwargs: Any,
-    ) -> Dict[str, Any]:
-        # Temporarily set the serialization behavior
-        original_value = self._serialize_part_as_string
-        self._serialize_part_as_string = serialize_part_as_string
-
-        try:
-            return super().model_dump(**kwargs)
-        finally:
-            # Restore original value
-            self._serialize_part_as_string = original_value
-
-    def model_dump_for_api(self, **kwargs: Any) -> Dict[str, Any]:
-        return self.model_dump(serialize_part_as_string=True, **kwargs)
-
-    def model_dump_for_schema(self, **kwargs: Any) -> Dict[str, Any]:
-        return self.model_dump(serialize_part_as_string=False, **kwargs)
 
 
 class ListAllChannelsResponse(BaseModel):
