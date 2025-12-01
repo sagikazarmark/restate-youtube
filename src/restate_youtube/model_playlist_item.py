@@ -96,9 +96,9 @@ class ListAllPlaylistItemsRequest(BaseModel):
     _serialize_part_as_string: bool = False
 
     # Filter parameters (exactly one must be specified)
-    id: str | None = Field(
+    id: list[str] | None = Field(
         None,
-        description="Comma-separated list of playlist item IDs",
+        description="List of playlist item IDs or comma-separated string",
     )
     playlist_id: str | None = Field(
         None,
@@ -138,9 +138,38 @@ class ListAllPlaylistItemsRequest(BaseModel):
                 )
         return validated_parts
 
+    @field_validator("id", mode="before")
+    @classmethod
+    def validate_id(cls, v):
+        """Parse and validate id parameter - accepts string or list."""
+        if v is None:
+            return v
+
+        # Handle both string and list inputs
+        if isinstance(v, str):
+            ids = [id_val.strip() for id_val in v.split(",") if id_val.strip()]
+        elif isinstance(v, list):
+            ids = [str(id_val).strip() for id_val in v if str(id_val).strip()]
+        else:
+            raise ValueError("ID must be a string or list of strings")
+
+        if not ids:
+            raise ValueError("At least one ID must be provided")
+
+        return ids
+
     @field_serializer("part")
     def serialize_part(self, v: list[str]) -> str | list[str]:
         """Serialize part list to comma-separated string or keep as list based on configuration."""
+        if self._serialize_part_as_string:
+            return ",".join(v)
+        return v
+
+    @field_serializer("id")
+    def serialize_id(self, v: list[str] | None) -> str | list[str] | None:
+        """Serialize id list to comma-separated string or keep as list based on configuration."""
+        if v is None:
+            return v
         if self._serialize_part_as_string:
             return ",".join(v)
         return v
