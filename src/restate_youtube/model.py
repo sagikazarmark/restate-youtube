@@ -427,7 +427,7 @@ class Playlist(BaseModel):
     localizations: Dict[str, Localized] | None = None
 
 
-class ListPlaylistsRequest(BaseModel, ListRequestMixin):
+class ListAllPlaylistsRequest(BaseModel):
     """Request parameters for the YouTube Data API playlists.list endpoint."""
 
     model_config = ConfigDict(validate_by_alias=True, serialize_by_alias=True)
@@ -452,13 +452,6 @@ class ListPlaylistsRequest(BaseModel, ListRequestMixin):
 
     # Optional parameters
     hl: str | None = Field(None, description="Language code for localized metadata")
-    max_results: int | None = Field(
-        None,
-        alias="maxResults",
-        ge=0,
-        le=50,
-        description="Maximum number of results (0-50, default 5)",
-    )
     on_behalf_of_content_owner: str | None = Field(
         None,
         alias="onBehalfOfContentOwner",
@@ -542,10 +535,24 @@ class ListPlaylistsRequest(BaseModel, ListRequestMixin):
         return self.model_dump(serialize_part_as_string=False, **kwargs)
 
 
-class ListPlaylistsResponse(BaseModel, ListResponseMixin):
+class ListAllPlaylistsResponse(BaseModel):
     model_config = ConfigDict(validate_by_alias=True, serialize_by_alias=True)
 
     kind: Literal["youtube#playlistListResponse"] = Field(
         default="youtube#playlistListResponse"
     )
     items: List[Playlist] = Field(default_factory=list)
+
+
+class ListPlaylistsRequest(ListAllPlaylistsRequest, ListRequestMixin):
+    max_results: int | None = Field(
+        None,
+        alias="maxResults",
+        ge=0,
+        le=50,
+        description="Maximum number of results (0-50, default 5)",
+    )
+
+
+class ListPlaylistsResponse(ListAllPlaylistsResponse, ListResponseMixin):
+    pass
